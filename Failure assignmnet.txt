@@ -1,0 +1,46 @@
+1. A POST is made to add a class and is successful
+
+HTTP/1.1 201 CREATED
+Location: 
+Content-Length: ...
+Content-Type: text/json
+
+{
+  "enrollment",
+  “next”: {
+    "type": "text/json",
+    "uri": "https://api.byu.edu/student/example-student/classes"
+  }
+}
+
+2. A POST is made to add a class for which the student doesn’t have the proper prerequisites.
+
+HTTP/1.1 409 CONFLICT
+Content-Length: ...
+Content-Type: text/json
+
+{
+  "error_message": "missing_prerequisite",
+  “next”: {
+    "type": "text/json",
+    "uri": "https://api.byu.edu/student/example-student/add_class"
+  }
+}
+
+3. A POST is made to add a class for which the class is full and the student needs an add code
+
+HTTP/1.1 200 OK
+Content-Length: ...
+Content-Type: text/json
+
+{
+  “next”: {
+    "type": "text/json",
+    "uri": "https://api.byu.edu/student/example-student/classes/example-prereq/add_class"
+  }
+}
+
+4. A DEL is made to drop a class and is successful
+
+
+5. A DEL is made to drop a class that is a prerequisite for a course that the student has already registered for the next semester.

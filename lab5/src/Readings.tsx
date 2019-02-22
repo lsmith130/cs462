@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import bind from 'bind-decorator';
 
 export function Readings() {
   return (<div>
@@ -13,18 +14,30 @@ export function Readings() {
 
 class CurrentReading extends Component {
 
-  async componentWillMount() {
-    this.setState({
-      loading: true,
-    });
+  interval = 0;
+  state = {
+    loading: true,
+    reading: null,
+    error: null,
+  }
 
+  componentWillMount() {
+    this.update();
+    this.interval = window.setInterval(this.update, 10000)
+  }
+  componentWillUnmount() {
+    window.clearInterval(this.interval);
+  }
+
+  @bind
+  async update() {
     try {
 
       const all = await fetchAll();
 
       this.setState({
         loading: false,
-        reading: all[0].temperature,
+        reading: all[all.length-1].temperature,
       });
     }
     catch (e) {
@@ -54,37 +67,64 @@ class CurrentReading extends Component {
   }
 }
 
+type ReadingListState = {
+  loading: boolean
+  reading: object | null
+  error: string | null
+  tempReadings: any[]
+}
+
+type Reading = {
+  temperature: Number
+  timestamp: String
+  isViolation: Boolean
+}
+
 class ReadingList extends Component {
 
-  async componentWillMount() {
-    this.setState({
-      loading: true,
-    });
+  interval = 0
+  state: ReadingListState = {
+    loading: true,
+    reading: null,
+    error: null,
+    tempReadings: [],
+  }
+
+  componentWillMount() {
+    this.update();
+    this.interval = window.setInterval(this.update, 10000)
+  }
+  componentWillUnmount() {
+    window.clearInterval(this.interval);
+  }
+
+  @bind
+  async update() {
 
     try {
-      let [violations, normal] = await Promise.all([
+      let [violations, normal]: [Reading[], Reading[]] = await Promise.all([
         fetchViolations(),
         fetchNormal(),
       ]);
 
       violations = violations.map(reading => {
         return {
-          value: reading.temperature,
+          temperature: reading.temperature,
           timestamp: reading.timestamp,
           isViolation: true,
         };
       });
       normal = normal.map(reading => {
         return {
-          value: reading.temperature,
+          temperature: reading.temperature,
           timestamp: reading.timestamp,
           isViolation: false,
         };
       });
 
-      const tempReadings = [...violations, ...normal]
-        .sort(reading => reading.timestamp)
-        .slice(0, 20);
+      const tempReadings: Reading[] = [...violations, ...normal]
+        .sort((a, b) => a.timestamp < b.timestamp ? 1 : -1)
+        .slice(0, 100);
       this.setState({
         loading: false,
         tempReadings,
@@ -101,7 +141,7 @@ class ReadingList extends Component {
   }
 
   render() {
-
+    console.log("render")
     if (this.state.loading) {
       return (
         <p>Loading...</p>
@@ -119,7 +159,7 @@ class ReadingList extends Component {
         {this.state.tempReadings.map(temp => <Reading
           key={temp.timestamp}
           timestamp={temp.timestamp}
-          value={temp.value}
+          value={temp.temperature}
           highlight={temp.isViolation}
         />)}
       </ul>
@@ -127,7 +167,7 @@ class ReadingList extends Component {
   }
 }
 
-function Reading({ timestamp, value, highlight }) {
+function Reading({ timestamp, value, highlight }: { timestamp: String, value: String, highlight: Boolean }) {
   const style = {
     backgroundColor: highlight ? "red" : "none",
   };
@@ -136,7 +176,7 @@ function Reading({ timestamp, value, highlight }) {
   </li>;
 }
 
-async function fetchViolations() {
+async function fetchViolations(): Promise<Reading[]> {
   const response = await fetch("http://cs462.umkhandi.com/sky/cloud/3vKrEpPU8QXMPZH8SxhWUW/temperature_store/threshold_violations");
   if (!response.ok) {
     throw response.statusText;
@@ -144,7 +184,7 @@ async function fetchViolations() {
   return response.json();
 }
 
-async function fetchAll() {
+async function fetchAll(): Promise<Reading[]> {
   const response = await fetch("http://cs462.umkhandi.com/sky/cloud/3vKrEpPU8QXMPZH8SxhWUW/temperature_store/temperatures");
   if (!response.ok) {
     throw response.statusText;
@@ -152,7 +192,7 @@ async function fetchAll() {
   return response.json()
 }
 
-async function fetchNormal() {
+async function fetchNormal(): Promise<Reading[]> {
   let response = await fetch("http://cs462.umkhandi.com/sky/cloud/3vKrEpPU8QXMPZH8SxhWUW/temperature_store/inrange_temperatures");
   if (!response.ok) {
     throw response.statusText;
