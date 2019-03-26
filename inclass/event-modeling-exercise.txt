@@ -1,0 +1,11 @@
+1. Tweets containing the keyword "healthcare"
+  where event:attr("body").match(re/healthcare/)
+2. Emails received with a subject containing the words "BYU" and "football" in any order
+  where event:attr("subj").match(re/BYU/) && event:attr("subj").match(re/football/)
+3. Four tweets with the keyword "healthcare" within 4 hours
+  where event:attr("body").match(re/healthcare/) within 4 hours
+4. Tweet with keyword "healthcare" followed by an email with "healthcare" in the body or subject
+  where event:attr("body").match(re/healthcare/) before event:attr("subj").match(re/healthcare/) || event:attr("subj").match(re/healthcare/)
+5. More than five emails from the same person within a 20-minute period
+6. Tweets that contain a stock-ticker symbol and the price of that same stock goes up by more than 2 percent within 10 minutes
+7. User visits any two of Google, Yahoo!, MSNBC, CNN, or KSL.
